@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Врач-рентгенолог</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f7f9fc;
+        }
+        input {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 250px;
+            transition: border 0.3s;
+        }
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            margin: 10px 0;
+            padding: 15px 0;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #007bff;
+            transition: transform 0.2s, background-color 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 250px;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .hidden {
+            display: none;
+        }
+        .branch-info {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .back-button {
+            margin-top: 20px;
+        }
+        .statistic {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 300px;
+            margin: 10px 0;
+        }
+        .statistic button {
+            width: 40px;
+            padding: 5px;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="authSection">
+        <h1>Аутентификация врача</h1>
+        <div>
+            <input type="text" id="username" placeholder="Имя врача" required>
+        </div>
+        <div>
+            <input type="password" id="password" placeholder="Пароль" required>
+        </div>
+        <div>
+            <button onclick="authenticate()">Войти</button>
+        </div>
+    </div>
+
+    <div id="branchSection" class="hidden">
+        <h1 id="doctorName">Выберите филиал</h1>
+        <div id="branchButtons" class="grid"></div>
+        <button class="back-button" onclick="goToAuth()">Назад</button>
+    </div>
+
+    <div id="branchDetailSection" class="hidden branch-info">
+        <h1>Статистика филиала</h1>
+        <h2 id="branchDate"></h2>
+        <h2 id="branchDoctorName"></h2>
+        <div id="statistics"></div>
+        <button class="back-button" onclick="goToBranch()">Назад к выбору филиала</button>
+    </div>
+
+    <div id="chiefRadiologistSection" class="hidden branch-info">
+        <h1>Выберите отчет</h1>
+        <h2 id="chiefDate"></h2>
+        <div id="chiefBranchButtons" class="grid"></div>
+        <button class="back-button" onclick="goToAuth()">Выйти</button>
+    </div>
+
+    <div id="chiefBranchDetailSection" class="hidden branch-info">
+        <h1>Отчет по филиалу</h1>
+        <h2 id="chiefBranchReportDate"></h2>
+        <h2 id="chiefBranchName"></h2>
+        <div id="chiefBranchStatistics"></div>
+        <button class="back-button" onclick="goToChief()">Назад к выбору филиала</button>
+    </div>
+
+    <div id="chiefAllBranchesSection" class="hidden branch-info">
+        <h1>Отчет по всем филиалам</h1>
+        <h2 id="chiefAllBranchesDate"></h2>
+        <div id="chiefAllReports"></div>
+        <button class="back-button" onclick="goToChief()">Назад</button>
+    </div>
+
+    <script>
+        const doctors = {
+            "Врач1": "Врач1",
+            "Врач2": "Врач2",
+            "Врач3": "Врач3",
+            "Врач4": "Врач4",
+            "Врач5": "Врач5",
+            "Врач6": "Врач6",
+            "Врач7": "Врач7",
+            "Врач8": "Врач8",
+            "Врач9": "Врач9",
+            "Врач10": "Врач10"
+        };
+
+        const chiefRadiologists = {
+            "Главный рентгенолог1": "главный1",
+            "Главный рентгенолог2": "главный2",
+            "Главный рентгенолог3": "главный3"
+        };
+
+        const branches = [
+            "Марьина Роща", "Новые Черёмушки", "Водный стадион", "Текстильщики",
+            "ВДНХ", "Курская", "Крылатское", "Севастопольская",
+            "Чертановская", "Молодёжная", "Юго-Западная", "Сухаревская",
+            "Улица 1905 года", "Войковская", "Балтийская", "Аэропорт",
+            "Динамо", "Петровский парк", "Белорусская", "Солнцево"
+        ];
+
+        const branchesStatistics = {};
+        const reports = [];
+
+        branches.forEach(branch => {
+            branchesStatistics[branch] = {
+                totalPatients: 0,
+                servicesProvided: 0,
+                patientsMissed: 0,
+                patientsRefused: 0,
+                wronglyBooked: 0
+            };
+        });
+
+        function authenticate() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (username in doctors && doctors[username] === password) {
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('branchSection').classList.remove('hidden');
+                document.getElementById('doctorName').textContent = `Выберите филиал, ${username}`;
+                createBranchButtonsForDoctors();
+            } else if (username in chiefRadiologists && chiefRadiologists[username] === password) {
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('chiefRadiologistSection').classList.remove('hidden');
+                document.getElementById('chiefDate').textContent = getCurrentDate();
+                createChiefBranchButtons();
+            } else {
+                alert("Неверное имя или пароль.");
+            }
+        }
+
+        function goToAuth() {
+            document.getElementById('branchSection').classList.add('hidden');
+            document.getElementById('chiefRadiologistSection').classList.add('hidden');
+            document.getElementById('chiefBranchDetailSection').classList.add('hidden');
+            document.getElementById('chiefAllBranchesSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function createBranchButtonsForDoctors() {
+            const buttonContainer = document.getElementById('branchButtons');
+            buttonContainer.innerHTML = '';
+            branches.forEach(branch => {
+                const button = document.createElement('button');
+                button.textContent = branch;
+                button.onclick = () => selectBranch(branch);
+                buttonContainer.appendChild(button);
+            });
+        }
+
+        function selectBranch(branch) {
+            document.getElementById('branchSection').classList.add('hidden');
+            document.getElementById('branchDetailSection').classList.remove('hidden');
+
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('branchDate').textContent = today.toLocaleDateString(undefined, options);
+            const username = document.getElementById('username').value.trim();
+            document.getElementById('branchDoctorName').textContent = `Врач: ${username}`;
+
+            displayStatistics(branch);
+        }
+
+        function displayStatistics(branch) {
+            const statisticsContainer = document.getElementById('statistics');
+            statisticsContainer.innerHTML = '';
+
+            for (let [key, value] of Object.entries(branchesStatistics[branch])) {
+                const statDiv = document.createElement('div');
+                statDiv.className = 'statistic';
+                statDiv.style.display = 'flex';
+                statDiv.style.justifyContent = 'space-between';
+                statDiv.innerHTML = `
+                    <button onclick="updateStatistic('${branch}', '${key}', -1)">-</button>
+                    <span>${getStatisticLabel(key)}: <span id="${branch}-${key}">${value}</span></span>
+                    <button onclick="updateStatistic('${branch}', '${key}', 1)">+</button>
+                `;
+                statisticsContainer.appendChild(statDiv);
+            }
+        }
+
+        function updateStatistic(branch, statistic, change) {
+            const newValue = branchesStatistics[branch][statistic] + change;
+
+            if (newValue >= 0) {
+                branchesStatistics[branch][statistic] = newValue;
+                recordReport(branch);
+                document.getElementById(`${branch}-${statistic}`).textContent = branchesStatistics[branch][statistic];
+            }
+        }
+
+        function recordReport(branch) {
+            const today = new Date().toLocaleDateString();
+            const existingReport = reports.find(report => report.date === today && report.branch === branch);
+
+            if (!existingReport) {
+                const report = {
+                    date: today,
+                    branch,
+                    doctor: document.getElementById('username').value.trim(),
+                    statistics: branchesStatistics[branch]
+                };
+                reports.push(report);
+            } else {
+                existingReport.statistics = branchesStatistics[branch];
+            }
+        }
+
+        function createChiefBranchButtons() {
+            const buttonContainer = document.getElementById('chiefBranchButtons');
+            buttonContainer.innerHTML = '';
+            branches.forEach(branch => {
+                const button = document.createElement('button');
+                button.textContent = branch;
+                button.onclick = () => showChiefBranchReport(branch);
+                buttonContainer.appendChild(button);
+            });
+
+            const allButton = document.createElement('button');
+            allButton.textContent = 'Все филиалы';
+            allButton.onclick = showAllBranchesReport;
+            buttonContainer.appendChild(allButton);
+        }
+
+        function showChiefBranchReport(branch) {
+            document.getElementById('chiefRadiologistSection').classList.add('hidden');
+            document.getElementById('chiefBranchDetailSection').classList.remove('hidden');
+
+            document.getElementById('chiefBranchName').textContent = `Филиал: ${branch}`;
+            document.getElementById('chiefBranchReportDate').textContent = getCurrentDate();
+            displayChiefBranchStatistics(branch);
+        }
+
+        function displayChiefBranchStatistics(branch) {
+            const statisticsContainer = document.getElementById('chiefBranchStatistics');
+            statisticsContainer.innerHTML = '';
+
+            const stats = branchesStatistics[branch];
+            for (let [key, value] of Object.entries(stats)) {
+                const statDiv = document.createElement('div');
+                statDiv.innerHTML = `${getStatisticLabel(key)}: ${value}`;
+                statisticsContainer.appendChild(statDiv);
+            }
+        }
+
+        function showAllBranchesReport() {
+            document.getElementById('chiefRadiologistSection').classList.add('hidden');
+            document.getElementById('chiefAllBranchesSection').classList.remove('hidden');
+
+            document.getElementById('chiefAllBranchesDate').textContent = getCurrentDate();
+            displayAllReports();
+        }
+
+        function displayAllReports() {
+            const allReportsContainer = document.getElementById('chiefAllReports');
+            allReportsContainer.innerHTML = '';
+
+            reports.forEach(report => {
+                const reportDiv = document.createElement('div');
+                reportDiv.className = 'report';
+                reportDiv.innerHTML = `
+                    <h3>${report.date} - ${report.branch} - Врач: ${report.doctor}</h3>
+                    <ul>
+                        <li>Всего пациентов: ${report.statistics.totalPatients}</li>
+                        <li>Оказано услуг: ${report.statistics.servicesProvided}</li>
+                        <li>Не дошло на услуги: ${report.statistics.patientsMissed}</li>
+                        <li>Отказались от услуг: ${report.statistics.patientsRefused}</li>
+                        <li>Неправильно записанных: ${report.statistics.wronglyBooked}</li>
+                    </ul>
+                `;
+                allReportsContainer.appendChild(reportDiv);
+            });
+        }
+
+        function getStatisticLabel(key) {
+            switch (key) {
+                case 'totalPatients': return 'Всего пациентов';
+                case 'servicesProvided': return 'Оказано услуг';
+                case 'patientsMissed': return 'Не дошло на услуги';
+                case 'patientsRefused': return 'Отказались от услуг';
+                case 'wronglyBooked': return 'Неправильно записанных';
+                default: return key;
+            }
+        }
+
+        function goToBranch() {
+            document.getElementById('branchDetailSection').classList.add('hidden');
+            document.getElementById('branchSection').classList.remove('hidden');
+        }
+
+        function goToChief() {
+            document.getElementById('chiefBranchDetailSection').classList.add('hidden');
+            document.getElementById('chiefAllBranchesSection').classList.add('hidden');
+            document.getElementById('chiefRadiologistSection').classList.remove('hidden');
+        }
+
+        function getCurrentDate() {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return today.toLocaleDateString(undefined, options);
+        }
+    </script>
+</body>
+</html>
